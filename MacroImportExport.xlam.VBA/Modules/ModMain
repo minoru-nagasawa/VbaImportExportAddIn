@@ -1,0 +1,231 @@
+Attribute VB_Name = "ModMain"
+Option Explicit
+
+Const TypeExcelObjects As Long = 100
+Const TypeModule As Long = 1
+Const TypeClass As Long = 2
+Const TypeForm As Long = 3
+    
+Public Sub ExportMacro(a_control As IRibbonControl)
+    Call exportMacroSub(ActiveWorkbook)
+End Sub
+
+Public Sub ImportMacro(a_control As IRibbonControl)
+    Call importMacroSub(ActiveWorkbook)
+End Sub
+
+Private Sub exportSelf()
+    Call exportMacroSub(ThisWorkbook)
+End Sub
+
+Private Sub importSelf()
+    Call importMacroSub(ThisWorkbook)
+End Sub
+
+Private Sub exportMacroSub(a_wb As Workbook)
+    ' Check if I can access VBA
+    On Error Resume Next
+    Dim tmp As Long
+    tmp = a_wb.VBProject.VBComponents.Count
+    If Err.Number = 1004 Then
+        MsgBox "Enable access to the VBA project'." + vbCrLf + _
+               "  1. Excel Options" + vbCrLf + _
+               "  2. Trust Center" + vbCrLf + _
+               "  3. Trust Center Settings" + vbCrLf + _
+               "  4. Macro Settings" + vbCrLf + _
+               "  5. Trust access to the VBA project object model"
+        Exit Sub
+    End If
+    On Error GoTo 0
+    
+    ' Check VBAComponents is exists or not
+    Dim v
+    Dim existFlag As Boolean
+    existFlag = False
+    For Each v In a_wb.VBProject.VBComponents
+        If v.Type = TypeExcelObjects Then
+            If Not isEmptyVba(v.CodeModule) Then
+                existFlag = True
+                Exit For
+            End If
+        End If
+        If v.Type = TypeModule Or v.Type = TypeClass Or v.Type = TypeForm Then
+            existFlag = True
+            Exit For
+        End If
+    Next
+    If Not existFlag Then
+        MsgBox "No macro."
+        Exit Sub
+    End If
+    
+    ' Create export folder
+    Dim fso
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Dim macroFolder As String
+    macroFolder = getOutputFolder(a_wb)
+    If fso.FolderExists(macroFolder) Then
+        Call fso.DeleteFolder(macroFolder)
+    End If
+    Call fso.createFolder(macroFolder)
+    
+    ' All Excel Objects
+    Dim folderExcelObjects As String
+    folderExcelObjects = macroFolder + "\ExcelObjects\"
+    For Each v In a_wb.VBProject.VBComponents
+        If v.Type = TypeExcelObjects Then
+            ' Check if VBA exists
+            If Not isEmptyVba(v.CodeModule) Then
+                If Not fso.FolderExists(folderExcelObjects) Then
+                    Call fso.createFolder(folderExcelObjects)
+                End If
+                
+                ' In the case of ExcelObject, we do not want to output unnecessary information (such as Attribute), so we do not use v.Export.
+                ' Output the code as it is.
+                Dim code As String
+                code = v.CodeModule.Lines(1, v.CodeModule.CountOfLines)
+                code = Trim(code) ' Just in case
+                
+                Dim textStream
+                Set textStream = fso.CreateTextFile(Filename:=folderExcelObjects + v.Name)
+                Call textStream.WriteLine(code)
+                textStream.Close
+                Set textStream = Nothing
+            End If
+        End If
+    Next
+    
+    ' All Modules, Classes, Forms
+    Call exportObjects(fso, a_wb, TypeModule, macroFolder + "\Modules\")
+    Call exportObjects(fso, a_wb, TypeClass, macroFolder + "\Classes\")
+    Call exportObjects(fso, a_wb, TypeForm, macroFolder + "\Forms\")
+    
+    Set fso = Nothing
+    MsgBox "Success."
+End Sub
+
+Private Sub exportObjects(a_fso, a_wb As Workbook, a_type As Long, a_folderName As String)
+    Dim v
+    For Each v In a_wb.VBProject.VBComponents
+        If v.Type = a_type Then
+            If Not a_fso.FolderExists(a_folderName) Then
+                Call a_fso.createFolder(a_folderName)
+            End If
+            Call v.Export(a_folderName + v.Name)
+        End If
+    Next
+End Sub
+
+Private Sub importMacroSub(a_wb As Workbook)
+    ' Check if I can access VBA
+    On Error Resume Next
+    Dim tmp As Long
+    tmp = a_wb.VBProject.VBComponents.Count
+    If Err.Number = 1004 Then
+        MsgBox "Enable access to the VBA project'." + vbCrLf + _
+               "  1. Excel Options" + vbCrLf + _
+               "  2. Trust Center" + vbCrLf + _
+               "  3. Trust Center Settings" + vbCrLf + _
+               "  4. Macro Settings" + vbCrLf + _
+               "  5. Trust access to the VBA project object model"
+        Exit Sub
+    End If
+    On Error GoTo 0
+    
+    ' Get exported folder
+    Dim fso
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Dim macroFolder As String
+    macroFolder = getOutputFolder(a_wb)
+    If Not fso.FolderExists(macroFolder) Then
+        MsgBox "No macro."
+        Set fso = Nothing
+        Exit Sub
+    End If
+    
+    ' Remove All Macros -----
+    Dim v
+    For Each v In a_wb.VBProject.VBComponents
+        If v.Type = TypeExcelObjects Then
+            ' Remove code
+            Call v.CodeModule.DeleteLines(1, v.CodeModule.CountOfLines)
+            
+        Else
+            ' Remove Object
+            ' Removing the form that already loaded will result in an error, so rename it before Removeing.
+            ' https://stackoverflow.com/questions/19800184/vbcomponents-remove-doesnt-always-remove-module
+            '
+            ' Furthermore, renaming with the same name will cause an error, so do not duplicate it.
+            v.Name = "REMOVE" & CStr(Int(Rnd * 1000000))
+            Call a_wb.VBProject.VBComponents.Remove(VBComponent:=v)
+        End If
+    Next
+    
+    ' All Excel Objects
+    Dim tmpFolder
+    Dim tmpFile
+    Dim folderExcelObjects As String
+    folderExcelObjects = macroFolder + "\ExcelObjects\"
+    If fso.FolderExists(folderExcelObjects) Then
+        Set tmpFolder = fso.GetFolder(folderExcelObjects)
+        For Each tmpFile In tmpFolder.Files
+            ' Find destination object
+            For Each v In a_wb.VBProject.VBComponents
+                If v.Type = TypeExcelObjects And v.Name = tmpFile.Name Then
+                    ' Update code
+                    Call v.CodeModule.AddFromFile(tmpFile.Path)
+                    Exit For
+                End If
+            Next
+            
+            Set tmpFile = Nothing
+        Next
+        Set tmpFolder = Nothing
+    End If
+    
+    ' All Modules, Classes, Forms
+    Call importObjects(fso, a_wb, macroFolder + "\Modules\")
+    Call importObjects(fso, a_wb, macroFolder + "\Classes\")
+    Call importObjects(fso, a_wb, macroFolder + "\Forms\")
+    
+    Set fso = Nothing
+    MsgBox "Success."
+End Sub
+
+Private Sub importObjects(a_fso, a_wb As Workbook, a_folderName As String)
+    Dim tmpFolder
+    Dim tmpFile
+    If a_fso.FolderExists(a_folderName) Then
+        Set tmpFolder = a_fso.GetFolder(a_folderName)
+        For Each tmpFile In tmpFolder.Files
+            If InStr(1, tmpFile.Name, ".") = 0 Then
+                Call a_wb.VBProject.VBComponents.Import(a_folderName + tmpFile.Name)
+            End If
+            
+            Set tmpFile = Nothing
+        Next
+        Set tmpFolder = Nothing
+    End If
+End Sub
+
+Private Function getOutputFolder(a_wb As Workbook)
+    getOutputFolder = a_wb.Path + "\" + a_wb.Name + ".VBA"
+End Function
+
+Private Function isEmptyVba(a_codeModule)
+    If a_codeModule.CountOfLines = 0 Then
+        isEmptyVba = True
+        Exit Function
+    End If
+    
+    Dim code As String
+    code = a_codeModule.Lines(1, a_codeModule.CountOfLines)
+    code = Replace(code, vbLf, "")
+    code = Replace(code, vbCr, "")
+    code = Trim(code)
+    If code = "" Or code = "Option Explicit" Then
+        isEmptyVba = True
+    Else
+        isEmptyVba = False
+    End If
+End Function
