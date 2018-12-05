@@ -1,9 +1,10 @@
 # VbaImportExportAddIn
-This is an Excel Add-In to import macros from text files and export macros to text files.
+This is an Excel Add-In to import macros from text files and export macros to text files.  
+It is useful when you want to manage VBA with git, svn, etc.
 
 ## How to use
 
-### ExpImportort macros
+### Import macros
 1. Put Excel book and macros, for example as follows.
 ```
 ./
