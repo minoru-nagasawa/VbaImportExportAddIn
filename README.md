@@ -25,7 +25,7 @@ This is an Excel Add-In to import macros from text files and export macros to te
 ```
 2. Open Excel book. (For example, open Book2.xlsm.)
 3. Click "Import" in Ribbon.  
- ![click import](https://github.com/minoru-nagasawa/DeleteHiddenObjectAddin/blob/master/import.png) 
+ ![click import](https://github.com/minoru-nagasawa/VbaImportExportAddIn/blob/master/import.png) 
 
 ### Export macros
 1. Click "Export" in Ribbon.  
