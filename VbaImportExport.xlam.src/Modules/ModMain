@@ -209,7 +209,7 @@ Private Sub importObjects(a_fso, a_wb As Workbook, a_folderName As String)
 End Sub
 
 Private Function getOutputFolder(a_wb As Workbook)
-    getOutputFolder = a_wb.Path + "\" + a_wb.Name + ".VBA"
+    getOutputFolder = a_wb.Path + "\" + a_wb.Name + ".src"
 End Function
 
 Private Function isEmptyVba(a_codeModule)

@@ -9,7 +9,7 @@ It is useful when you want to manage VBA with git, svn, etc.
 ```
 ./
 ├ Book2.xlsm
-└ Book2.xlsm.VBA
+└ Book2.xlsm.src
     ├ Classes
     │    └ Class1
     │
@@ -35,7 +35,7 @@ It is useful when you want to manage VBA with git, svn, etc.
 ```
 ./
 ├ Book1.xlsm
-└ Book1.xlsm.VBA
+└ Book1.xlsm.src
     ├ Classes
     │    └ Class1
     │
