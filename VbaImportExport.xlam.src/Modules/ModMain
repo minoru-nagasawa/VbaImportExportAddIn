@@ -1,4 +1,4 @@
-Attribute VB_Name = "ModMain"
+
 Option Explicit
 
 Const TypeExcelObjects As Long = 100
@@ -6,9 +6,9 @@ Const TypeModule As Long = 1
 Const TypeClass As Long = 2
 Const TypeForm As Long = 3
 
-const EXT_MODULE as string = "bas"
-const EXT_CLASS as string = "cls"
-const EXT_FORM as string = "frm"
+Const EXT_MODULE As String = "bas"
+Const EXT_CLASS As String = "cls"
+Const EXT_FORM As String = "frm"
 
     
 Public Sub ExportMacro(a_control As IRibbonControl)
@@ -92,7 +92,7 @@ Private Sub exportMacroSub(a_wb As Workbook)
                 code = Trim(code) ' Just in case
                 
                 Dim textStream
-                Set textStream = fso.CreateTextFile(Filename:=folderExcelObjects + v.Name)
+                Set textStream = fso.CreateTextFile(fileName:=folderExcelObjects + v.Name)
                 Call textStream.WriteLine(code)
                 textStream.Close
                 Set textStream = Nothing
@@ -109,25 +109,25 @@ Private Sub exportMacroSub(a_wb As Workbook)
     MsgBox "Success."
 End Sub
 
-private function getExt(a_type as long)
-    dim ext as string
+Private Function genExt(a_type As Long)
+    Dim ext As String
     ext = ""
 
-    select case a_type
-    case TypeModule
+    Select Case a_type
+    Case TypeModule
         ext = "." & EXT_MODULE
-    case TypeClass
+    Case TypeClass
         ext = "." & EXT_CLASS
-    case TypeForm
+    Case TypeForm
         ext = "." & EXT_FORM
-    end select
-    getExt = ext 
+    End Select
+    genExt = ext
 
-end function
+End Function
 
 Private Sub exportObjects(a_fso, a_wb As Workbook, a_type As Long, a_folderName As String)
     Dim v
-    dim ext as string
+    Dim ext As String
     
     ext = ""
 
@@ -136,7 +136,7 @@ Private Sub exportObjects(a_fso, a_wb As Workbook, a_type As Long, a_folderName 
             If Not a_fso.FolderExists(a_folderName) Then
                 Call a_fso.createFolder(a_folderName)
             End If
-            ext = getExt(a_type)
+            ext = genExt(a_type)
             Call v.Export(a_folderName + v.Name + ext)
         End If
     Next
@@ -218,29 +218,27 @@ Private Sub importMacroSub(a_wb As Workbook)
     MsgBox "Success."
 End Sub
 
-private function isTarget(a_fso, fileName as string)
-    dim ret as boolean 
-    dim ext as string
+Private Function isTarget(fileExt As String)
+    Dim ret As Boolean
+    ret = False
     
-    ret = false
-    ext = a_fso.GetExtentionName(fileName)
+    If (fileExt = EXT_CLASS Or fileExt = EXT_FORM Or fileExt = EXT_MODULE) Then
+        ret = True
+    End If
     
-    if (ext = EXT_CLASS or ext = EXT_FORM or ext = EXT_MODULE) then
-        ret = true
-    end if
-    
-    isTarget = ret 
-end function
+    isTarget = ret
+End Function
 
 
 Private Sub importObjects(a_fso, a_wb As Workbook, a_folderName As String)
     Dim tmpFolder
     Dim tmpFile
+    Dim ext As String
     If a_fso.FolderExists(a_folderName) Then
         Set tmpFolder = a_fso.GetFolder(a_folderName)
         For Each tmpFile In tmpFolder.Files
-            'If InStr(1, tmpFile.Name, ".") = 0 Then
-            If isTarget(a_fso, tmpFile.Name) then
+            ext = a_fso.getExtensionName(tmpFile.Name)
+            If isTarget(ext) Then
                 Call a_wb.VBProject.VBComponents.Import(a_folderName + tmpFile.Name)
             End If
             
@@ -271,3 +269,5 @@ Private Function isEmptyVba(a_codeModule)
         isEmptyVba = False
     End If
 End Function
+
+
