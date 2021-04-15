@@ -11,18 +11,18 @@ It is useful when you want to manage VBA with git, svn, etc.
 ├ Book2.xlsm
 └ Book2.xlsm.src
     ├ Classes
-    │    └ Class1
+    │    └ Class1.cls
     │
     ├ ExcelObjects
     │    ├ Sheet1
     │    └ ThisWorkbook
     │
     ├ Forms
-    │    ├ UserForm1
+    │    ├ UserForm1.frm
     │    └ UserForm1.frx
     │
     └ Modules
-         └ Module1
+         └ Module1.bas
 ```
 2. Open Excel book. (For example, open Book2.xlsm.)
 3. Click "Import" in Ribbon.  
@@ -37,18 +37,18 @@ It is useful when you want to manage VBA with git, svn, etc.
 ├ Book1.xlsm
 └ Book1.xlsm.src
     ├ Classes
-    │    └ Class1
+    │    └ Class1.cls
     │
     ├ ExcelObjects
     │    ├ Sheet1
     │    └ ThisWorkbook
     │
     ├ Forms
-    │    ├ UserForm1
+    │    ├ UserForm1.frm
     │    └ UserForm1.frx
     │
     └ Modules
-         └ Module1
+         └ Module1.bas
 ```
 
 ## Installation
