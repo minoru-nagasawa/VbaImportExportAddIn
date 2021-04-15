@@ -5,6 +5,11 @@ Const TypeExcelObjects As Long = 100
 Const TypeModule As Long = 1
 Const TypeClass As Long = 2
 Const TypeForm As Long = 3
+
+const EXT_MODULE as string = "bas"
+const EXT_CLASS as string = "cls"
+const EXT_FORM as string = "frm"
+
     
 Public Sub ExportMacro(a_control As IRibbonControl)
     Call exportMacroSub(ActiveWorkbook)
@@ -104,14 +109,35 @@ Private Sub exportMacroSub(a_wb As Workbook)
     MsgBox "Success."
 End Sub
 
+private function getExt(a_type as long)
+    dim ext as string
+    ext = ""
+
+    select case a_type
+    case TypeModule
+        ext = "." & EXT_MODULE
+    case TypeClass
+        ext = "." & EXT_CLASS
+    case TypeForm
+        ext = "." & EXT_FORM
+    end select
+    getExt = ext 
+
+end function
+
 Private Sub exportObjects(a_fso, a_wb As Workbook, a_type As Long, a_folderName As String)
     Dim v
+    dim ext as string
+    
+    ext = ""
+
     For Each v In a_wb.VBProject.VBComponents
         If v.Type = a_type Then
             If Not a_fso.FolderExists(a_folderName) Then
                 Call a_fso.createFolder(a_folderName)
             End If
-            Call v.Export(a_folderName + v.Name)
+            ext = getExt(a_type)
+            Call v.Export(a_folderName + v.Name + ext)
         End If
     Next
 End Sub
@@ -192,13 +218,29 @@ Private Sub importMacroSub(a_wb As Workbook)
     MsgBox "Success."
 End Sub
 
+private function isTarget(a_fso, fileName as string)
+    dim ret as boolean 
+    dim ext as string
+    
+    ret = false
+    ext = a_fso.GetExtentionName(fileName)
+    
+    if (ext = EXT_CLASS or ext = EXT_FORM or ext = EXT_MODULE) then
+        ret = true
+    end if
+    
+    isTarget = ret 
+end function
+
+
 Private Sub importObjects(a_fso, a_wb As Workbook, a_folderName As String)
     Dim tmpFolder
     Dim tmpFile
     If a_fso.FolderExists(a_folderName) Then
         Set tmpFolder = a_fso.GetFolder(a_folderName)
         For Each tmpFile In tmpFolder.Files
-            If InStr(1, tmpFile.Name, ".") = 0 Then
+            'If InStr(1, tmpFile.Name, ".") = 0 Then
+            If isTarget(a_fso, tmpFile.Name) then
                 Call a_wb.VBProject.VBComponents.Import(a_folderName + tmpFile.Name)
             End If
             
