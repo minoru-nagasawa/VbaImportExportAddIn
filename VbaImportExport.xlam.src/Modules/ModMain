@@ -1,4 +1,4 @@
-
+Attribute VB_Name = "ModMain"
 Option Explicit
 
 Const TypeExcelObjects As Long = 100
